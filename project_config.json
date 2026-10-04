@@ -1,0 +1,13 @@
+{
+  "dataset_id": "clinc/oos-eval/data/data_full.json",
+  "dataset_revision": "828f8093932c8fe6ca7936c3d2e52903b1c523de",
+  "dataset_file": "data/clinc_oos_full.json",
+  "dataset_sha256": "36923c3705a59e08fe9c3883d8bc2dd966ef93e22cb78ac41171782a698d56e0",
+  "model_id": "google/bert_uncased_L-2_H-128_A-2",
+  "model_revision": "30b0a37ccaaa32f332884b96992754e246e48c5f",
+  "seed": 42,
+  "max_length": 64,
+  "batch_size": 32,
+  "epochs": 3,
+  "learning_rate": 0.0003
+}

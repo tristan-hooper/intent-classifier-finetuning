@@ -1,0 +1,348 @@
+{
+  "dataset": {
+    "id": "clinc/oos-eval/data/data_full.json",
+    "revision": "828f8093932c8fe6ca7936c3d2e52903b1c523de",
+    "sha256": "36923c3705a59e08fe9c3883d8bc2dd966ef93e22cb78ac41171782a698d56e0",
+    "test_examples": 5500,
+    "intents": 150,
+    "out_of_scope_class": "oos",
+    "cross_split_exact_text_overlaps": {
+      "val__oos_val": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "train__oos_val": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "oos_val__oos_test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "test__oos_val": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "oos_train__oos_val": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "train__val": {
+        "shared_utterances": 3,
+        "label_disagreements": 2
+      },
+      "val__oos_test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "val__test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "val__oos_train": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "train__oos_test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "train__test": {
+        "shared_utterances": 2,
+        "label_disagreements": 2
+      },
+      "train__oos_train": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "test__oos_test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "oos_train__oos_test": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      },
+      "test__oos_train": {
+        "shared_utterances": 0,
+        "label_disagreements": 0
+      }
+    },
+    "train_examples": 15100,
+    "validation_examples": 3100
+  },
+  "model": {
+    "id": "google/bert_uncased_L-2_H-128_A-2",
+    "revision": "30b0a37ccaaa32f332884b96992754e246e48c5f",
+    "selection_metric": "validation macro F1 over 151 classes",
+    "best_epoch": 3,
+    "best_validation_macro_f1": 0.8200844684103954,
+    "test_loss": 1.4854015007019044,
+    "max_input_wordpieces": {
+      "train": 33,
+      "validation": 29,
+      "test": 30
+    },
+    "epochs": [
+      {
+        "epoch": 1,
+        "training_loss": 3.7973967453659765,
+        "validation_loss": 2.356892519304829,
+        "validation_accuracy": 0.6316129032258064,
+        "validation_macro_f1": 0.6072312465173919,
+        "seconds": 58.198549799999455
+      },
+      {
+        "epoch": 2,
+        "training_loss": 1.579311754924572,
+        "validation_loss": 1.180301526284987,
+        "validation_accuracy": 0.7403225806451613,
+        "validation_macro_f1": 0.7304291812785395,
+        "seconds": 60.64660989999902
+      },
+      {
+        "epoch": 3,
+        "training_loss": 0.7825744584380396,
+        "validation_loss": 0.8216403430508029,
+        "validation_accuracy": 0.8180645161290323,
+        "validation_macro_f1": 0.8200844684103954,
+        "seconds": 57.765078299999004
+      }
+    ],
+    "training_seconds": 180.0991372000026
+  },
+  "environment": {
+    "python": "3.12.10",
+    "numpy": "2.5.3",
+    "scikit-learn": "1.9.1",
+    "torch": "2.14.1+cpu",
+    "transformers": "5.18.0",
+    "huggingface-hub": "1.33.0",
+    "device": "cpu"
+  },
+  "metrics": {
+    "tfidf_logistic_regression": {
+      "examples": 5500,
+      "class_count_including_oos": 151,
+      "accuracy": 0.734909090909091,
+      "macro_f1_all_classes": 0.8082637391690415,
+      "known_intent_accuracy": 0.8855555555555555,
+      "oos_precision": 0.8507462686567164,
+      "oos_recall": 0.057,
+      "oos_f1": 0.10684161199625117,
+      "oos_examples": 1000,
+      "predicted_oos_examples": 67,
+      "oos_confusion_matrix": [
+        [
+          4490,
+          10
+        ],
+        [
+          943,
+          57
+        ]
+      ]
+    },
+    "fine_tuned_bert_tiny": {
+      "examples": 5500,
+      "class_count_including_oos": 151,
+      "accuracy": 0.7145454545454546,
+      "macro_f1_all_classes": 0.7631755000918082,
+      "known_intent_accuracy": 0.8384444444444444,
+      "oos_precision": 0.9457831325301205,
+      "oos_recall": 0.157,
+      "oos_f1": 0.2692967409948542,
+      "oos_examples": 1000,
+      "predicted_oos_examples": 166,
+      "oos_confusion_matrix": [
+        [
+          4491,
+          9
+        ],
+        [
+          843,
+          157
+        ]
+      ]
+    }
+  },
+  "validation_metrics": {
+    "tfidf_logistic_regression": {
+      "examples": 3100,
+      "class_count_including_oos": 151,
+      "accuracy": 0.86,
+      "macro_f1_all_classes": 0.8689148191999461,
+      "known_intent_accuracy": 0.8833333333333333,
+      "oos_precision": 0.5714285714285714,
+      "oos_recall": 0.16,
+      "oos_f1": 0.25,
+      "oos_examples": 100,
+      "predicted_oos_examples": 28,
+      "oos_confusion_matrix": [
+        [
+          2988,
+          12
+        ],
+        [
+          84,
+          16
+        ]
+      ]
+    },
+    "fine_tuned_bert_tiny": {
+      "examples": 3100,
+      "class_count_including_oos": 151,
+      "accuracy": 0.8180645161290323,
+      "macro_f1_all_classes": 0.8200844684103954,
+      "known_intent_accuracy": 0.8383333333333334,
+      "oos_precision": 0.84,
+      "oos_recall": 0.21,
+      "oos_f1": 0.336,
+      "oos_examples": 100,
+      "predicted_oos_examples": 25,
+      "oos_confusion_matrix": [
+        [
+          2996,
+          4
+        ],
+        [
+          79,
+          21
+        ]
+      ]
+    }
+  },
+  "fit_and_evaluation_seconds": {
+    "tfidf_fit_and_validation": 4.425852099997428,
+    "bert_training_and_test": 180.0991372000026
+  },
+  "top_known_intent_confusions": {
+    "tfidf_logistic_regression": [
+      {
+        "true_intent": "calendar",
+        "predicted_intent": "calendar_update",
+        "count": 11
+      },
+      {
+        "true_intent": "change_user_name",
+        "predicted_intent": "user_name",
+        "count": 9
+      },
+      {
+        "true_intent": "oil_change_how",
+        "predicted_intent": "oil_change_when",
+        "count": 8
+      },
+      {
+        "true_intent": "redeem_rewards",
+        "predicted_intent": "rewards_balance",
+        "count": 8
+      },
+      {
+        "true_intent": "meal_suggestion",
+        "predicted_intent": "restaurant_suggestion",
+        "count": 7
+      },
+      {
+        "true_intent": "pto_request",
+        "predicted_intent": "pto_request_status",
+        "count": 6
+      },
+      {
+        "true_intent": "improve_credit_score",
+        "predicted_intent": "credit_score",
+        "count": 6
+      },
+      {
+        "true_intent": "restaurant_suggestion",
+        "predicted_intent": "meal_suggestion",
+        "count": 6
+      },
+      {
+        "true_intent": "shopping_list_update",
+        "predicted_intent": "shopping_list",
+        "count": 5
+      },
+      {
+        "true_intent": "transactions",
+        "predicted_intent": "spending_history",
+        "count": 5
+      }
+    ],
+    "fine_tuned_bert_tiny": [
+      {
+        "true_intent": "oil_change_when",
+        "predicted_intent": "oil_change_how",
+        "count": 30
+      },
+      {
+        "true_intent": "calendar_update",
+        "predicted_intent": "calendar",
+        "count": 24
+      },
+      {
+        "true_intent": "what_is_your_name",
+        "predicted_intent": "user_name",
+        "count": 18
+      },
+      {
+        "true_intent": "redeem_rewards",
+        "predicted_intent": "rewards_balance",
+        "count": 15
+      },
+      {
+        "true_intent": "distance",
+        "predicted_intent": "directions",
+        "count": 13
+      },
+      {
+        "true_intent": "shopping_list",
+        "predicted_intent": "shopping_list_update",
+        "count": 13
+      },
+      {
+        "true_intent": "improve_credit_score",
+        "predicted_intent": "credit_score",
+        "count": 11
+      },
+      {
+        "true_intent": "change_user_name",
+        "predicted_intent": "user_name",
+        "count": 11
+      },
+      {
+        "true_intent": "maybe",
+        "predicted_intent": "no",
+        "count": 10
+      },
+      {
+        "true_intent": "share_location",
+        "predicted_intent": "current_location",
+        "count": 10
+      }
+    ]
+  },
+  "run_config": {
+    "seed": 42,
+    "max_wordpieces": 64,
+    "batch_size": 32,
+    "maximum_epochs": 3,
+    "learning_rate": 0.0003,
+    "optimizer": "AdamW",
+    "device": "cpu",
+    "checkpoint_selection": "highest validation macro F1 over 151 classes",
+    "baseline": {
+      "features": "word-level TF-IDF",
+      "ngram_range": [
+        1,
+        2
+      ],
+      "sublinear_tf": true,
+      "classifier": "LogisticRegression",
+      "solver": "saga",
+      "max_iter": 100,
+      "tolerance": 0.001,
+      "seed": 42
+    }
+  }
+}
