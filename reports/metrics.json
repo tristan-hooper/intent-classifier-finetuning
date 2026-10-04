@@ -4,6 +4,8 @@
     "revision": "828f8093932c8fe6ca7936c3d2e52903b1c523de",
     "sha256": "36923c3705a59e08fe9c3883d8bc2dd966ef93e22cb78ac41171782a698d56e0",
     "test_examples": 5500,
+    "train_examples": 15100,
+    "validation_examples": 3100,
     "intents": 150,
     "out_of_scope_class": "oos",
     "cross_split_exact_text_overlaps": {
@@ -67,9 +69,7 @@
         "shared_utterances": 0,
         "label_disagreements": 0
       }
-    },
-    "train_examples": 15100,
-    "validation_examples": 3100
+    }
   },
   "model": {
     "id": "google/bert_uncased_L-2_H-128_A-2",
@@ -90,7 +90,7 @@
         "validation_loss": 2.356892519304829,
         "validation_accuracy": 0.6316129032258064,
         "validation_macro_f1": 0.6072312465173919,
-        "seconds": 58.198549799999455
+        "seconds": 56.892197599998326
       },
       {
         "epoch": 2,
@@ -98,7 +98,7 @@
         "validation_loss": 1.180301526284987,
         "validation_accuracy": 0.7403225806451613,
         "validation_macro_f1": 0.7304291812785395,
-        "seconds": 60.64660989999902
+        "seconds": 52.02262910000354
       },
       {
         "epoch": 3,
@@ -106,10 +106,34 @@
         "validation_loss": 0.8216403430508029,
         "validation_accuracy": 0.8180645161290323,
         "validation_macro_f1": 0.8200844684103954,
-        "seconds": 57.765078299999004
+        "seconds": 54.20531479999772
       }
     ],
-    "training_seconds": 180.0991372000026
+    "training_and_validation_seconds": 163.2062066000035,
+    "checkpoint_reload_and_test_evaluation_seconds": 3.2583465999996406
+  },
+  "run_config": {
+    "seed": 42,
+    "max_wordpieces": 64,
+    "batch_size": 32,
+    "maximum_epochs": 3,
+    "learning_rate": 0.0003,
+    "optimizer": "AdamW",
+    "device": "cpu",
+    "checkpoint_selection": "highest validation macro F1 over 151 classes",
+    "baseline": {
+      "features": "word-level TF-IDF",
+      "ngram_range": [
+        1,
+        2
+      ],
+      "sublinear_tf": true,
+      "classifier": "LogisticRegression",
+      "solver": "saga",
+      "max_iter": 100,
+      "tolerance": 0.001,
+      "seed": 42
+    }
   },
   "environment": {
     "python": "3.12.10",
@@ -213,8 +237,9 @@
     }
   },
   "fit_and_evaluation_seconds": {
-    "tfidf_fit_and_validation": 4.425852099997428,
-    "bert_training_and_test": 180.0991372000026
+    "tfidf_fit_and_validation": 4.181671099999221,
+    "bert_training_and_validation": 163.2062066000035,
+    "bert_checkpoint_reload_and_test_evaluation": 3.2583465999996406
   },
   "top_known_intent_confusions": {
     "tfidf_logistic_regression": [
@@ -321,28 +346,5 @@
         "count": 10
       }
     ]
-  },
-  "run_config": {
-    "seed": 42,
-    "max_wordpieces": 64,
-    "batch_size": 32,
-    "maximum_epochs": 3,
-    "learning_rate": 0.0003,
-    "optimizer": "AdamW",
-    "device": "cpu",
-    "checkpoint_selection": "highest validation macro F1 over 151 classes",
-    "baseline": {
-      "features": "word-level TF-IDF",
-      "ngram_range": [
-        1,
-        2
-      ],
-      "sublinear_tf": true,
-      "classifier": "LogisticRegression",
-      "solver": "saga",
-      "max_iter": 100,
-      "tolerance": 0.001,
-      "seed": 42
-    }
   }
 }

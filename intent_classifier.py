@@ -158,9 +158,30 @@ def predict_batches(model, dataset, device, batch_size):
     return np.asarray(all_truth), np.asarray(all_predictions), np.asarray(all_confidences), loss_sum / len(dataset)
 
 
+def _validated_label_ids(values, name, class_count):
+    ids = np.asarray(values)
+    if ids.ndim != 1 or ids.size == 0:
+        raise ValueError(f"{name} must be a nonempty one-dimensional sequence of class IDs")
+    if not np.issubdtype(ids.dtype, np.integer) or np.issubdtype(ids.dtype, np.bool_):
+        raise ValueError(f"{name} must contain integer class IDs")
+    if np.any(ids < 0) or np.any(ids >= class_count):
+        raise ValueError(f"{name} contains class IDs outside 0..{class_count - 1}")
+    return ids.astype(np.int64, copy=False)
+
+
 def score_predictions(truth, predictions, class_names):
-    truth = np.asarray(truth, dtype=int)
-    predictions = np.asarray(predictions, dtype=int)
+    if (
+        not isinstance(class_names, (list, tuple))
+        or not class_names
+        or any(not isinstance(name, str) or not name.strip() for name in class_names)
+        or len(set(class_names)) != len(class_names)
+        or "oos" not in class_names
+    ):
+        raise ValueError("class_names must contain unique, nonblank labels including 'oos'")
+    truth = _validated_label_ids(truth, "truth", len(class_names))
+    predictions = _validated_label_ids(predictions, "predictions", len(class_names))
+    if len(truth) != len(predictions):
+        raise ValueError("truth and predictions must have the same number of class IDs")
     label_ids = np.arange(len(class_names))
     oos_id = class_names.index("oos")
     oos_p, oos_r, oos_f, _ = precision_recall_fscore_support(
@@ -245,7 +266,7 @@ def fit_transformer(train_rows, val_rows, test_rows, class_names, output_dir):
     best_epoch = None
     best_dir = Path(output_dir)
     best_dir.mkdir(parents=True, exist_ok=True)
-    started = time.perf_counter()
+    training_started = time.perf_counter()
 
     for epoch in range(1, CONFIG["epochs"] + 1):
         epoch_start = time.perf_counter()
@@ -286,22 +307,28 @@ def fit_transformer(train_rows, val_rows, test_rows, class_names, output_dir):
             model.save_pretrained(best_dir, safe_serialization=True)
             tokenizer.save_pretrained(best_dir)
 
+    training_and_validation_seconds = time.perf_counter() - training_started
+
     # Re-load the validation-selected checkpoint and evaluate the test split exactly once.
+    test_evaluation_started = time.perf_counter()
     model = AutoModelForSequenceClassification.from_pretrained(best_dir, local_files_only=True)
     model.to(device)
     test_truth, test_predictions, confidences, test_loss = predict_batches(
         model, test_set, device, CONFIG["batch_size"],
     )
+    test_metrics = score_predictions(test_truth, test_predictions, class_names)
+    checkpoint_reload_and_test_evaluation_seconds = time.perf_counter() - test_evaluation_started
     return {
         "selection_metric": "validation macro F1 over 151 classes",
         "best_epoch": best_epoch,
         "best_validation_macro_f1": best_validation_macro_f1,
         "validation": best_validation_metrics,
         "test_loss": test_loss,
-        "test": score_predictions(test_truth, test_predictions, class_names),
+        "test": test_metrics,
         "predictions": test_predictions.tolist(),
         "max_softmax_confidence": confidences.tolist(),
-        "training_seconds": time.perf_counter() - started,
+        "training_and_validation_seconds": training_and_validation_seconds,
+        "checkpoint_reload_and_test_evaluation_seconds": checkpoint_reload_and_test_evaluation_seconds,
         "max_input_wordpieces": {
             "train": train_longest, "validation": val_longest, "test": test_longest,
         },
@@ -347,7 +374,10 @@ def write_reports(
             "test_loss": transformer_result["test_loss"],
             "max_input_wordpieces": transformer_result["max_input_wordpieces"],
             "epochs": transformer_result["epochs"],
-            "training_seconds": transformer_result["training_seconds"],
+            "training_and_validation_seconds": transformer_result["training_and_validation_seconds"],
+            "checkpoint_reload_and_test_evaluation_seconds": (
+                transformer_result["checkpoint_reload_and_test_evaluation_seconds"]
+            ),
         },
         "run_config": {
             "seed": CONFIG["seed"],
@@ -371,7 +401,10 @@ def write_reports(
         },
         "fit_and_evaluation_seconds": {
             "tfidf_fit_and_validation": tfidf_result["seconds"],
-            "bert_training_and_test": transformer_result["training_seconds"],
+            "bert_training_and_validation": transformer_result["training_and_validation_seconds"],
+            "bert_checkpoint_reload_and_test_evaluation": (
+                transformer_result["checkpoint_reload_and_test_evaluation_seconds"]
+            ),
         },
         "top_known_intent_confusions": {
             "tfidf_logistic_regression": top_confusions(
@@ -410,6 +443,12 @@ def write_reports(
         "# Intent classification evaluation", "",
         "Both methods were fit on the same training examples. The transformer checkpoint",
         "was selected by validation macro F1. The test set was held aside until selection.", "",
+        (
+            f"BERT training and validation took "
+            f"{content['model']['training_and_validation_seconds']:.1f} seconds; "
+            f"checkpoint reload and final test evaluation took "
+            f"{content['model']['checkpoint_reload_and_test_evaluation_seconds']:.1f} seconds."
+        ), "",
         f"The fixed test split contains {len(test_rows)} requests: "
         f"{len(test_rows) - 1000} in-scope examples across 150 intents and 1,000 out-of-scope examples.", "",
         "| Method | Test examples | Accuracy | Macro F1 (151 classes) | Known-intent accuracy | OOS precision | OOS recall | OOS F1 |",
@@ -505,7 +544,10 @@ def train_project(model_dir=DEFAULT_MODEL_DIR, report_dir=DEFAULT_REPORT_DIR):
     )
     print(json.dumps({
         "baseline_seconds": baseline["seconds"],
-        "training_seconds": model_result["training_seconds"],
+        "training_and_validation_seconds": model_result["training_and_validation_seconds"],
+        "checkpoint_reload_and_test_evaluation_seconds": (
+            model_result["checkpoint_reload_and_test_evaluation_seconds"]
+        ),
         "test_metrics": content["metrics"],
         "reports": str(report_dir),
         "model_checkpoint": str(model_dir),

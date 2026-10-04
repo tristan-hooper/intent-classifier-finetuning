@@ -11,12 +11,13 @@ git clone https://github.com/tristan-hooper/intent-classifier-finetuning.git
 cd intent-classifier-finetuning
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q
 .\.venv\Scripts\python.exe intent_classifier.py train
 .\.venv\Scripts\python.exe intent_classifier.py predict "I need to check the current balance on my account"
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-The training command fits both methods on the same training rows, evaluates each epoch on validation data, saves the BERT checkpoint with the best validation macro F1, and evaluates the saved checkpoint on test data once. Reports are written to `reports/`. The trained model is saved in ignored `models/`; rerun `train` before using `predict` after a fresh clone.
+The first test run needs no downloaded model: it exercises the data, metrics, selection logic, and prediction behavior with local fixtures. The saved-checkpoint integration test is skipped until `train` creates `models/clinc-bert-tiny/`; after training, the second test run exercises that checkpoint too. Training fits both methods on the same training rows, evaluates each epoch on validation data, saves the BERT checkpoint with the best validation macro F1, and evaluates the saved checkpoint on test data once. Reports are written to `reports/`. The trained model is saved in ignored `models/`; rerun `train` before using `predict` after a fresh clone.
 
 ## What it does
 

@@ -1,6 +1,8 @@
 import json
 from collections import Counter
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 
@@ -57,6 +59,28 @@ def test_score_metrics_on_hand_computed_example():
 def test_score_rejects_nan_inputs():
     with pytest.raises((ValueError, TypeError)):
         project.score_predictions([0], [float("nan")], ["oos"])
+
+
+@pytest.mark.parametrize(
+    ("truth", "predictions"),
+    [
+        ([0], [0.9]),
+        ([0.5], [0]),
+        ([0, 1], [0]),
+        ([0], [3]),
+        ([-1], [0]),
+        ([[0]], [0]),
+        ([], []),
+    ],
+)
+def test_score_rejects_malformed_class_ids(truth, predictions):
+    with pytest.raises(ValueError):
+        project.score_predictions(truth, predictions, ["known", "oos", "other"])
+
+
+def test_score_rejects_invalid_class_inventory():
+    with pytest.raises(ValueError, match="unique, nonblank"):
+        project.score_predictions([0], [0], ["known", "oos", "oos"])
 
 
 def test_confusions_exclude_correct_predictions_and_oos():
@@ -125,13 +149,16 @@ def test_saved_training_evaluation_matches_raw_predictions():
                 assert report["metrics"][key][name] == value
 
 
-def test_finetuning_selection_uses_validation_metric():
-    train, validation, test, names, _ = project.load_splits()
+def test_saved_report_records_run_configuration_and_source_limits():
+    _, validation, test, _, _ = project.load_splits()
     assert len(validation) == 3100 and len(test) == 5500
     assert project.DEFAULT_REPORT_DIR.is_dir()
     report = json.loads((project.DEFAULT_REPORT_DIR / "metrics.json").read_text(encoding="utf-8"))
     assert report["model"]["selection_metric"] == "validation macro F1 over 151 classes"
     assert report["model"]["best_epoch"] in range(1, project.CONFIG["epochs"] + 1)
+    assert "training_and_validation_seconds" in report["model"]
+    assert "checkpoint_reload_and_test_evaluation_seconds" in report["model"]
+    assert "training_seconds" not in report["model"]
     assert report["run_config"] == {
         "seed": 42,
         "max_wordpieces": 64,
@@ -150,7 +177,119 @@ def test_finetuning_selection_uses_validation_metric():
     }
 
 
+def test_fit_transformer_saves_checkpoint_with_best_validation_score(monkeypatch, tmp_path):
+    class_names = ["alpha", "beta", "oos"]
+    train_set = torch.utils.data.TensorDataset(
+        torch.tensor([[1, 2]]), torch.tensor([[1, 1]]), torch.tensor([0]),
+    )
+    validation_set = object()
+    test_set = object()
+    encoded_sets = iter(((train_set, 2), (validation_set, 2), (test_set, 2)))
+    monkeypatch.setattr(project, "encode_rows", lambda *args, **kwargs: next(encoded_sets))
+    monkeypatch.setitem(project.CONFIG, "epochs", 3)
+    monkeypatch.setitem(project.CONFIG, "batch_size", 1)
+    monkeypatch.setitem(project.CONFIG, "max_length", 4)
+
+    class FakeTokenizer:
+        @classmethod
+        def from_pretrained(cls, *args, **kwargs):
+            return cls()
+
+        def save_pretrained(self, path):
+            return None
+
+    saved_epochs = []
+
+    class FakeModel:
+        def __init__(self, epoch=0):
+            self.epoch = epoch
+            self.config = SimpleNamespace()
+
+        def to(self, device):
+            return self
+
+        def parameters(self):
+            return []
+
+        def train(self):
+            self.epoch += 1
+
+        def __call__(self, **kwargs):
+            return SimpleNamespace(loss=torch.tensor(1.0, requires_grad=True))
+
+        def save_pretrained(self, path, safe_serialization):
+            saved_epochs.append(self.epoch)
+
+    class FakeModelLoader:
+        @classmethod
+        def from_pretrained(cls, path, **kwargs):
+            assert kwargs["local_files_only"] is True
+            return FakeModel(saved_epochs[-1])
+
+    class FakeOptimizer:
+        def zero_grad(self, set_to_none):
+            return None
+
+        def step(self):
+            return None
+
+    monkeypatch.setattr(project, "AutoTokenizer", FakeTokenizer)
+    monkeypatch.setattr(project, "AutoModelForSequenceClassification", FakeModelLoader)
+    monkeypatch.setattr(project, "make_transformer", lambda *args: FakeModel())
+    monkeypatch.setattr(project.torch.optim, "AdamW", lambda *args, **kwargs: FakeOptimizer())
+
+    validation_predictions = {
+        1: np.asarray([0, 0, 0]),
+        2: np.asarray([0, 1, 2]),
+        3: np.asarray([0, 0, 0]),
+    }
+    evaluated = []
+
+    def fake_predict_batches(model, dataset, device, batch_size):
+        evaluated.append("validation" if dataset is validation_set else "test")
+        truth = np.asarray([0, 1, 2])
+        predictions = (
+            validation_predictions[model.epoch]
+            if dataset is validation_set else np.asarray([0, 1, 2])
+        )
+        return truth, predictions, np.asarray([0.8, 0.8, 0.8]), 0.5
+
+    monkeypatch.setattr(project, "predict_batches", fake_predict_batches)
+    result = project.fit_transformer(
+        [("a", "alpha")], [("b", "beta")], [("c", "oos")], class_names, tmp_path / "model",
+    )
+
+    assert result["best_epoch"] == 2
+    assert saved_epochs == [1, 2]
+    assert evaluated == ["validation", "validation", "validation", "test"]
+    assert result["test"]["accuracy"] == 1.0
+
+
+def test_predict_runs_with_a_loaded_checkpoint(monkeypatch):
+    class FakeTokenizer:
+        def __call__(self, text, truncation, return_tensors):
+            return {
+                "input_ids": torch.tensor([[1, 2]]),
+                "attention_mask": torch.tensor([[1, 1]]),
+            }
+
+    class FakeModel:
+        config = SimpleNamespace(id2label={0: "balance", 1: "oos"})
+
+        def __call__(self, **kwargs):
+            return SimpleNamespace(logits=torch.tensor([[0.0, 2.0]]))
+
+    monkeypatch.setattr(project, "load_classifier", lambda model_dir: (FakeTokenizer(), FakeModel()))
+    result = project.predict("check balance")
+    assert result["intent"] == "oos"
+    assert 0 < result["max_softmax_probability"] <= 1
+    assert result["probability_is_calibrated_confidence"] is False
+
+
+@pytest.mark.integration
 def test_saved_checkpoint_predicts_a_known_label():
+    if not (project.DEFAULT_MODEL_DIR / "config.json").is_file():
+        pytest.skip("Train the model to run this local-checkpoint integration test")
     _, _, _, class_names, _ = project.load_splits()
     result = project.predict("I need to check the current balance on my account")
     assert result["intent"] in class_names

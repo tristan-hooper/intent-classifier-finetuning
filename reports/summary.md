@@ -3,6 +3,8 @@
 Both methods were fit on the same training examples. The transformer checkpoint
 was selected by validation macro F1. The test set was held aside until selection.
 
+BERT training and validation took 163.2 seconds; checkpoint reload and final test evaluation took 3.3 seconds.
+
 The fixed test split contains 5500 requests: 4500 in-scope examples across 150 intents and 1,000 out-of-scope examples.
 
 | Method | Test examples | Accuracy | Macro F1 (151 classes) | Known-intent accuracy | OOS precision | OOS recall | OOS F1 |
@@ -26,9 +28,9 @@ The published splits are preserved; these overlaps are a limitation of the sourc
 
 | Epoch | Train loss | Validation loss | Validation accuracy | Validation macro F1 | Seconds |
 | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1 | 3.7974 | 2.3569 | 63.16% | 0.6072 | 58.2 |
-| 2 | 1.5793 | 1.1803 | 74.03% | 0.7304 | 60.6 |
-| 3 | 0.7826 | 0.8216 | 81.81% | 0.8201 | 57.8 |
+| 1 | 3.7974 | 2.3569 | 63.16% | 0.6072 | 56.9 |
+| 2 | 1.5793 | 1.1803 | 74.03% | 0.7304 | 52.0 |
+| 3 | 0.7826 | 0.8216 | 81.81% | 0.8201 | 54.2 |
 
 ## Most frequent known-intent confusions
 
